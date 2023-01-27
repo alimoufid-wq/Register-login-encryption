@@ -40,7 +40,8 @@ mongoose.connect("mongodb://127.0.0.1:27017/userDB");
 const userShema = new mongoose.Schema({
     email : String,
     password : String,
-    googleId : String
+    googleId : String,
+    secret : String
 });
 
 // use passportlocalmongoose as plugin
@@ -103,11 +104,29 @@ app.get("/login",function (req,res) {
 })
 
 
-// add authentification to the secret page
+// add authentification to the secret page and submit page
 app.get("/secrets",function (req,res) {
+    User.find({"secret" : {$ne : null}}, function (err , foundSecrets) {
+        if (err) {
+            console.log(err);
+        } else {
+            res.render("secrets" , {userWithSecrets : foundSecrets})
+        }
+    })
+
+    // if (req.isAuthenticated()) {
+    //     console.log('already logged');
+    //     res.render("secrets");
+    // } else {
+    //     console.log("need to login");
+    //     res.redirect("/login");
+    // }
+})
+
+app.get("/submit",function (req,res) {
     if (req.isAuthenticated()) {
         console.log('already logged');
-        res.render("secrets");
+        res.render("submit");
     } else {
         console.log("need to login");
         res.redirect("/login");
@@ -167,6 +186,22 @@ app.post("/login" , function (req,res) {
         }
     })
 
+})
+
+app.post("/submit" , function (req,res) {
+    const submitedSecret = req.body.secret;
+    User.findById( req.user.id , function (err,founduser) {
+        if (err) {
+            console.log(err);
+        } else {
+            if (founduser) {
+                founduser.secret = submitedSecret;
+                founduser.save(function () {
+                    res.redirect("/secrets")
+                })
+            }
+        }
+    })
 })
 
 
